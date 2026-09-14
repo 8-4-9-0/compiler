@@ -1,3 +1,9 @@
+/**
+ * @file code.c
+ * @author Kyogo Yamashita
+ * @brief  ファイル生成及びアセンブリ生成を行う
+ *
+ */
 #include "code.h"
 
 FILE *fp;

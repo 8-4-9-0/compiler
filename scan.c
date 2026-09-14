@@ -1,5 +1,5 @@
 /**
-* @file scan.c 
+* @file scan.c
 * @brief MPPL構文の解析を行う
 * @author Kyogo Yamashita
 */

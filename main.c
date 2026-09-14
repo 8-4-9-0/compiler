@@ -1,7 +1,7 @@
 ﻿/**
  * @file main.c
  * @brief 字句解析器メインファイル
- * @author omzn (@omzn.aquatan.net)
+ * @author omzn (@omzn.aquatan.net), Kyogo Yamashita
  */
 #include "scan.h"
 #include "parse.h"
