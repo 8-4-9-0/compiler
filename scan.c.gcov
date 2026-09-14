@@ -1,0 +1,422 @@
+        -:    0:Source:scan.c
+        -:    1:/**
+        -:    2:* @file scan.c 
+        -:    3:* @brief MPPL構文の解析を行う
+        -:    4:* @author Kyogo Yamashita
+        -:    5:*/
+        -:    6:
+        -:    7:#include "scan.h"
+        -:    8:#include "id-list.h"
+        -:    9:
+        -:   10://! 字句解析された数値
+        -:   11:int num_attr;
+        -:   12://! 字句解析された文字列
+        -:   13:char string_attr[MAXSTRSIZE+1];
+        -:   14:
+        -:   15://! 先読みバッファ
+        -:   16:int cbuf;
+        -:   17://! 読み込んだ行数
+        -:   18:int linenum = 1;
+        -:   19://! 読み込んだ行数（実際に返す値）
+        -:   20:int linenum_return = 0;
+        -:   21://! 読み込んだ文字列の長さ
+        -:   22:int slen = 0;
+        -:   23://! 記号および対応するトークン番号のリスト配列
+        -:   24:int symbols[14][2] = {{'+', TPLUS}, {'-', TMINUS}, {'*', TSTAR}, {'=', TEQUAL}, {'<', TLE}, {'>', TGR}, 
+        -:   25:    {'(', TLPAREN}, {')', TRPAREN}, {'[', TLSQPAREN}, {']', TRSQPAREN}, {':', TCOLON}, {'.', TDOT}, {',', TCOMMA}, {';', TSEMI}};
+        -:   26://! 記号の種類。具体的には記号に対応するトークン番号
+        -:   27:int symboltype;
+        -:   28:int isScanningComment = 0;
+        -:   29://! ファイルポインタ
+        -:   30:FILE *f = NULL;
+        -:   31:
+        -:   32:/**
+        -:   33:* @brief 解析対象ファイルの読み込み
+        -:   34:* @param[in] char* filename 入力ファイル名 
+        -:   35:* @return 正常=0, 異常=-1
+        -:   36:* @details ファイルを開き、最初の一文字をcbufに先読みしておく
+        -:   37:*/
+function init_scan called 77 returned 100% blocks executed 83%
+       77:   38:int init_scan(char *filename) {
+       77:   39:    if((f = fopen(filename, "r")) == NULL) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:   40:        return ERROR;
+        -:   41:    }
+       77:   42:    read_next();
+call    0 returned 100%
+        -:   43:
+       77:   44:    return NORMAL;
+        -:   45:}
+        -:   46:
+        -:   47:/**
+        -:   48:* @brief 字句解析を行う
+        -:   49:* @return 読み込んだ字句に対応するトークン番号。読み込み中にファイルの末尾に到達した場合は-1を返す
+        -:   50:* @details cbufに格納されている文字の種類によって処理を分岐させる
+        -:   51:*/
+function scan called 9663 returned 100% blocks executed 67%
+     9663:   52:int scan(void) {
+     9663:   53:    memset(string_attr, '\0', MAXSTRSIZE+1);
+        -:   54:    /*! カウンタ */
+     9663:   55:    int i = 0;
+        -:   56:    /*! cbufの一時保存用変数 */
+     9663:   57:    int ctemp = cbuf;
+     9663:   58:    slen = 0;
+        -:   59:
+    22119:   60:    while(cbuf != EOF) {
+branch  0 taken 100%
+branch  1 taken 1% (fallthrough)
+    22047:   61:        linenum_return = linenum;
+    22047:   62:        switch(get_type(cbuf)) {
+call    0 returned 100%
+branch  1 taken 21%
+branch  2 taken 4%
+branch  3 taken 1%
+branch  4 taken 0%
+branch  5 taken 0%
+branch  6 taken 19%
+branch  7 taken 0%
+branch  8 taken 56%
+    15119:   63:            case 1:
+        -:   64:                do {
+    15119:   65:                    if(slen++ >= MAXSTRLEN) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:   66:                        error("The string in the input is too long.");
+call    0 never executed
+    #####:   67:                        exit(-1);
+call    0 never executed
+        -:   68:                    }
+    15119:   69:                    string_attr[i++] = cbuf;
+    15119:   70:                    read_next();
+call    0 returned 100%
+    15119:   71:                } while(get_type(cbuf) == 1 || get_type(cbuf) == 2);
+call    0 returned 100%
+branch  1 taken 68% (fallthrough)
+branch  2 taken 32%
+call    3 returned 100%
+branch  4 taken 6% (fallthrough)
+branch  5 taken 94%
+    87657:   72:                for(int j=0; j<KEYWORDSIZE; j++) {
+branch  0 taken 98%
+branch  1 taken 2% (fallthrough)
+    85784:   73:                    if(strcmp(string_attr, key[j].keyword) == 0) {
+branch  0 taken 3% (fallthrough)
+branch  1 taken 97%
+     2658:   74:                        return key[j].keytoken;
+        -:   75:                    }
+        -:   76:                }
+     1873:   77:                id_countup(string_attr);
+call    0 returned 100%
+     1873:   78:                return TNAME;
+      197:   79:            case 2:
+        -:   80:                do {
+      986:   81:                    if(slen++ >= MAXSTRLEN) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:   82:                        error("The string in the input is too long.");
+call    0 never executed
+    #####:   83:                        exit(-1);
+call    0 never executed
+        -:   84:                    }
+      986:   85:                    string_attr[i++] = cbuf;
+      986:   86:                    read_next();
+call    0 returned 100%
+      986:   87:                } while(get_type(cbuf) == 2);
+call    0 returned 100%
+branch  1 taken 20%
+branch  2 taken 80% (fallthrough)
+      789:   88:                if((num_attr = (int)strtol(string_attr, NULL, 10)) > MAXNUM) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:   89:                    error("The number in the input exceeds the maximum value.");
+call    0 never executed
+    #####:   90:                    exit(-1);
+call    0 never executed
+        -:   91:                } 
+      789:   92:                return TNUMBER;
+      109:   93:            case 3:
+      109:   94:                read_next();
+call    0 returned 100%
+        -:   95:                while(1) {
+      344:   96:                    if(cbuf == '\n' || cbuf == '\r' || cbuf == EOF) {
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 1% (fallthrough)
+branch  5 taken 100%
+        1:   97:                        error("invalid Syntax");
+call    0 returned 100%
+        1:   98:                        exit(-1);
+call    0 returned 0%
+        -:   99:                    }
+      343:  100:                    if(cbuf == '\'') {
+branch  0 taken 31% (fallthrough)
+branch  1 taken 69%
+      108:  101:                        read_next();
+call    0 returned 100%
+      108:  102:                        if(cbuf == '\'') {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  103:                            string_attr[i++] = cbuf;
+        -:  104:                        } else {
+      108:  105:                            break;
+        -:  106:                        }
+        -:  107:                    }
+      235:  108:                    if(slen++ >= MAXSTRLEN) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  109:                        error("The string in the input is too long.");
+call    0 never executed
+    #####:  110:                        exit(-1);
+call    0 never executed
+        -:  111:                    }
+      235:  112:                    string_attr[i++] = cbuf;
+      235:  113:                    read_next();
+call    0 returned 100%
+        -:  114:                }
+      108:  115:                return TSTRING;
+    #####:  116:            case 4:
+        -:  117:                do {
+    #####:  118:                    read_next();
+call    0 never executed
+    #####:  119:                } while(cbuf != '}' && cbuf != EOF);
+branch  0 never executed (fallthrough)
+branch  1 never executed
+branch  2 never executed
+branch  3 never executed (fallthrough)
+    #####:  120:                break;
+    #####:  121:            case 5:
+    #####:  122:                read_next();
+call    0 never executed
+    #####:  123:                if(cbuf == '*') {
+branch  0 never executed (fallthrough)
+branch  1 never executed
+    #####:  124:                    isScanningComment = 1;
+    #####:  125:                    read_next();
+call    0 never executed
+    #####:  126:                    while(cbuf != EOF) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:  127:                        if(cbuf == '*') {
+branch  0 never executed (fallthrough)
+branch  1 never executed
+    #####:  128:                            read_next();
+call    0 never executed
+    #####:  129:                            if(cbuf == '/') {
+branch  0 never executed (fallthrough)
+branch  1 never executed
+    #####:  130:                                isScanningComment = 0;
+    #####:  131:                                break;
+        -:  132:                            } else {
+    #####:  133:                                continue;
+        -:  134:                            }
+        -:  135:                        }
+    #####:  136:                        read_next();
+call    0 never executed
+        -:  137:                    }
+        -:  138:                } else {
+    #####:  139:                    error("invalid Syntax");
+call    0 never executed
+    #####:  140:                    exit(-1);
+call    0 never executed
+        -:  141:                }
+    #####:  142:                break;
+     4162:  143:            case 6:
+     4162:  144:                ctemp = cbuf;
+     4162:  145:                read_next();
+call    0 returned 100%
+     4162:  146:                switch(ctemp) {
+branch  0 taken 1%
+branch  1 taken 29%
+branch  2 taken 70%
+       62:  147:                    case '<':
+       62:  148:                        if(cbuf == '>') {
+branch  0 taken 19% (fallthrough)
+branch  1 taken 81%
+       12:  149:                            read_next();
+call    0 returned 100%
+       12:  150:                            return TNOTEQ;
+       50:  151:                        } else if(cbuf == '=') {
+branch  0 taken 24% (fallthrough)
+branch  1 taken 76%
+       12:  152:                            read_next();
+call    0 returned 100%
+       12:  153:                            return TLEEQ;
+        -:  154:                        }
+       38:  155:                        break;
+     1204:  156:                    case '>':
+        -:  157:                    case ':':
+     1204:  158:                        if(cbuf == '=') {
+branch  0 taken 46% (fallthrough)
+branch  1 taken 54%
+      549:  159:                            read_next();
+call    0 returned 100%
+      549:  160:                            return ctemp == '>' ? TGREQ : TASSIGN;
+branch  0 taken 2% (fallthrough)
+branch  1 taken 98%
+        -:  161:                        }
+      655:  162:                        break;
+        -:  163:                }
+     3589:  164:                return symboltype;
+    #####:  165:            case 7:
+    #####:  166:                error("invalid Syntax");
+call    0 never executed
+    #####:  167:                exit(-1);
+call    0 never executed
+    12456:  168:            default:
+    12456:  169:                break;
+        -:  170:        }
+        -:  171:
+    12456:  172:        read_next();
+call    0 returned 100%
+        -:  173:    }
+        -:  174:
+       72:  175:    return -1;
+        -:  176:}
+        -:  177:
+        -:  178:/**
+        -:  179:* @brief これまでに読み込んだ行数を返す
+        -:  180:* @return 読み込んだ行数。まだ一度もscan()が実行されていない場合は0を返す
+        -:  181:* @details 直近のscan()で返されたトークンが存在した行の番号を返す
+        -:  182:*/
+function get_linenum called 1872 returned 100% blocks executed 100%
+     1872:  183:int get_linenum(void) {
+     1872:  184:    return linenum_return;
+        -:  185:}   
+        -:  186:
+        -:  187:/**
+        -:  188:* @brief 解析対象ファイルのクローズ
+        -:  189:* @details init_scan(filename)でオープンしたファイルをクローズする
+        -:  190:*/
+function end_scan called 2 returned 100% blocks executed 100%
+        2:  191:void end_scan(void) {
+        2:  192:    if(f != NULL) fclose(f);
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+call    2 returned 100%
+        -:  193:
+        2:  194:    return;
+        -:  195:}
+        -:  196:
+        -:  197:/**
+        -:  198:* @brief 先読みを行う
+        -:  199:* @details ファイルから1文字読み、cbufに格納する。改行コードが読み込まれた場合は行数を増やす。読み込んだ文字が表示文字（に加えて改行コード、タブ、EOF）でない場合はエラーを返す
+        -:  200:*/
+function read_next called 33825 returned 100% blocks executed 64%
+    33825:  201:void read_next(void) {
+    33825:  202:    cbuf = fgetc(f);
+call    0 returned 100%
+   33825*:  203:    if(!((cbuf >= 0x20 && cbuf <= 0x7E) || cbuf == '\n' || cbuf == '\r' || cbuf == '\t' || cbuf == EOF) && !isScanningComment) {
+branch  0 taken 96% (fallthrough)
+branch  1 taken 4%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
+branch  4 taken 6% (fallthrough)
+branch  5 taken 94%
+branch  6 taken 100% (fallthrough)
+branch  7 taken 0%
+branch  8 taken 100% (fallthrough)
+branch  9 taken 0%
+branch 10 taken 0% (fallthrough)
+branch 11 taken 100%
+branch 12 never executed (fallthrough)
+branch 13 never executed
+    #####:  204:        error("invalid Syntax");
+call    0 never executed
+    #####:  205:        end_scan();
+call    0 never executed
+    #####:  206:        exit(-1);
+call    0 never executed
+        -:  207:    }
+    33825:  208:    if(cbuf == '\r') {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  209:        if((cbuf = fgetc(f)) != '\n') {
+call    0 never executed
+branch  1 never executed (fallthrough)
+branch  2 never executed
+    #####:  210:            ungetc(cbuf, f);
+call    0 never executed
+    #####:  211:            cbuf = '\r';
+        -:  212:        }
+    #####:  213:        linenum++;
+    33825:  214:    } else if(cbuf == '\n') {
+branch  0 taken 4% (fallthrough)
+branch  1 taken 96%
+     1257:  215:        if((cbuf = fgetc(f)) != '\r') {
+call    0 returned 100%
+branch  1 taken 100% (fallthrough)
+branch  2 taken 0%
+     1257:  216:            ungetc(cbuf, f);
+call    0 returned 100%
+     1257:  217:            cbuf = '\n';
+        -:  218:        }
+     1257:  219:        linenum++;
+        -:  220:    }
+        -:  221:
+    33825:  222:    return;
+        -:  223:}
+        -:  224:
+        -:  225:/// @brief 文字の種類の判別
+        -:  226:/// @param[in] int c 文字コード 
+        -:  227:/// @return 分離子=0, 英字=1, 数字=2, 文字列=3, 注釈({...})=4, 注釈(/*...*/)=5, 記号=6, 無効な文字=7
+        -:  228:/// @details 読み込んだ文字コードの値によって処理を分岐させる
+function get_type called 42987 returned 100% blocks executed 92%
+    42987:  229:int get_type(int c) {
+    42987:  230:    if(c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+branch  0 taken 62% (fallthrough)
+branch  1 taken 38%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 93% (fallthrough)
+branch  5 taken 7%
+branch  6 taken 0% (fallthrough)
+branch  7 taken 100%
+    18059:  231:        return 0;
+    24928:  232:    } else if((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+branch  0 taken 66% (fallthrough)
+branch  1 taken 34%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+branch  4 taken 59% (fallthrough)
+branch  5 taken 41%
+branch  6 taken 100% (fallthrough)
+branch  7 taken 0%
+    14815:  233:        return 1;
+    10113:  234:    } else if(c >= '0' && c <= '9') {
+branch  0 taken 80% (fallthrough)
+branch  1 taken 20%
+branch  2 taken 20% (fallthrough)
+branch  3 taken 80%
+     1594:  235:        return 2;
+     8519:  236:    } else if(c == '\'') {
+branch  0 taken 1% (fallthrough)
+branch  1 taken 99%
+      109:  237:        return 3;
+     8410:  238:    } else if(c == '{') {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  239:        return 4;
+     8410:  240:    } else if(c == '/') {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  241:        return 5;
+        -:  242:    } else {
+    94212:  243:        for(int i=0; i<14; i++) {
+branch  0 taken 100%
+branch  1 taken 1% (fallthrough)
+    94145:  244:            if(c == symbols[i][0]) {
+branch  0 taken 9% (fallthrough)
+branch  1 taken 91%
+     8343:  245:                symboltype = symbols[i][1];
+     8343:  246:                return 6;
+        -:  247:            }
+        -:  248:        }
+        -:  249:
+       67:  250:        return 7;
+        -:  251:    }
+        -:  252:}

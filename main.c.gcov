@@ -1,0 +1,120 @@
+        -:    0:Source:main.c
+        -:    1:﻿/**
+        -:    2: * @file main.c
+        -:    3: * @brief 字句解析器メインファイル
+        -:    4: * @author omzn (@omzn.aquatan.net)
+        -:    5: */
+        -:    6:#include "scan.h"
+        -:    7:#include "parse.h"
+        -:    8:#include "reference.h"
+        -:    9:#include "code.h"
+        -:   10:#include "outlib.h"
+        -:   11:#include "id-list.h"
+        -:   12:
+        -:   13://! キーワードリスト配列
+        -:   14:struct KEY key[KEYWORDSIZE] = {
+        -:   15:  {"and", TAND},         {"array", TARRAY},     {"begin", TBEGIN},
+        -:   16:  {"boolean", TBOOLEAN}, {"break", TBREAK},     {"call", TCALL},
+        -:   17:  {"char", TCHAR},       {"div", TDIV},         {"do", TDO},
+        -:   18:  {"else", TELSE},       {"end", TEND},         {"false", TFALSE},
+        -:   19:  {"if", TIF},           {"integer", TINTEGER}, {"not", TNOT},
+        -:   20:  {"of", TOF},           {"or", TOR},           {"procedure", TPROCEDURE},
+        -:   21:  {"program", TPROGRAM}, {"read", TREAD},       {"readln", TREADLN},
+        -:   22:  {"return", TRETURN},   {"then", TTHEN},       {"true", TTRUE},
+        -:   23:  {"var", TVAR},         {"while", TWHILE},     {"write", TWRITE},
+        -:   24:  {"writeln", TWRITELN}};
+        -:   25:
+        -:   26://! トークンカウンター
+        -:   27:int numtoken[NUMOFTOKEN + 1];
+        -:   28:
+        -:   29://! 各トークンに対応する文字列
+        -:   30:char *tokenstr[NUMOFTOKEN + 1] = {
+        -:   31:  "",        "NAME",    "program", "var",     "array",     "of",     
+        -:   32:  "begin",   "end",     "if",      "then",    "else",      "procedure",
+        -:   33:  "return",  "call",    "while",   "do",      "not",       "or",
+        -:   34:  "div",     "and",     "char",    "integer", "boolean",   "readln",
+        -:   35:  "writeln", "true",    "false",   "NUMBER",  "STRING",    "+",
+        -:   36:  "-",       "*",       "=",       "<>",      "<",         "<=",
+        -:   37:  ">",       ">=",      "(",       ")",       "[",         "]",
+        -:   38:  ":=",      ".",       ",",       ":",       ";",         "read",   
+        -:   39:  "write",   "break"};
+        -:   40:
+        -:   41:/**
+        -:   42: * @brief メイン関数
+        -:   43: * 
+        -:   44: * @param argc コマンドライン引数の数
+        -:   45: * @param argv 引数が格納された配列
+        -:   46: * @return int 正常:0 異常:非0
+        -:   47: */
+function main called 77 returned 99% blocks executed 68%
+       77:   48:int main(int argc, char *argv[]) {
+        -:   49:  //! トークン, i
+        -:   50:  int token, i;
+        -:   51:
+       77:   52:  if (argc < 2) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:   53:    error("File name is not given.");
+call    0 never executed
+    #####:   54:    return 0;
+        -:   55:  }
+       77:   56:  if (init_scan(argv[1]) == 0) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:   57:    error("Cannot open input file.");
+call    0 never executed
+    #####:   58:    return 0;
+        -:   59:  }
+        -:   60:
+      77*:   61:  if(!open_file(argv[1])) return error("Failed to write the output file");
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+call    3 never executed
+       77:   62:  if(!parse_program(token = scan())) return -1;
+call    0 returned 100%
+call    1 returned 99%
+branch  2 taken 97% (fallthrough)
+branch  3 taken 3%
+        -:   63:  //print_reference_table();
+        -:   64:
+        2:   65:  close_file();
+call    0 returned 100%
+        2:   66:  end_scan();
+call    0 returned 100%
+        -:   67:  
+        -:   68:  /*
+        -:   69:  memset(numtoken, 0, NUMOFTOKEN+1);
+        -:   70:  init_idtab();
+        -:   71:
+        -:   72:  while ((token = scan()) >= 0) {
+        -:   73:    numtoken[token]++;
+        -:   74:  }
+        -:   75:  end_scan();
+        -:   76:
+        -:   77:  for(int i=0; i<=NUMOFTOKEN; i++) {
+        -:   78:    if(numtoken[i] > 0) printf("\"%s\"\t%d\n", tokenstr[i], numtoken[i]);
+        -:   79:    if(i == TNAME) {
+        -:   80:      print_idtab();
+        -:   81:    }
+        -:   82:  }
+        -:   83:  */
+        -:   84:
+        2:   85:  return 0;
+        -:   86:}
+        -:   87:
+        -:   88:/**
+        -:   89: * @brief エラーメッセージを表示する関数
+        -:   90: * 
+        -:   91: * @param mes メッセージ
+        -:   92: * @return int ERROR (固定)
+        -:   93: */
+function error called 75 returned 100% blocks executed 100%
+       75:   94:int error(char *mes) { 
+       75:   95:	fprintf(stderr, "Line: %4d ERROR: %s\n", get_linenum(), mes); 
+call    0 returned 100%
+call    1 returned 100%
+        -:   96:  //fflush(stdout);
+       75:   97:  return ERROR;
+        -:   98:}

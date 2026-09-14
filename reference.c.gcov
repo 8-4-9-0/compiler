@@ -1,0 +1,766 @@
+        -:    0:Source:reference.c
+        -:    1:#include "reference.h"
+        -:    2:
+        -:    3:struct SYMBOL *symbolRoot = NULL;
+        -:    4:struct TYPE *paramTypeRef = NULL;
+        -:    5:struct ID *globalIdRoot = NULL, *localIdRoot = NULL;
+        -:    6:struct IDROOT *idRootRoot = NULL;
+        -:    7:
+        -:    8:int typeNoRef = -1;
+        -:    9:int operatorNoRef = -1;
+        -:   10:int arraySizeRef = -1;
+        -:   11:int arrayElemTypeNoRef = -1;
+        -:   12:char varNameRef[MAXSTRLEN+1];
+        -:   13:char procNameRef[MAXSTRLEN+1];
+        -:   14:
+        -:   15:char *type_str[] = {
+        -:   16:    "",
+        -:   17:    "integer",
+        -:   18:    "char",
+        -:   19:    "boolean",
+        -:   20:    "array",
+        -:   21:    "procedure",
+        -:   22:};
+        -:   23:
+function get_digit called 0 returned 0% blocks executed 0%
+    #####:   24:int get_digit(int n){
+    #####:   25:	int digit = 0;
+    #####:   26:	while(n != 0){
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:   27:		n /= 10;
+    #####:   28:		digit++;
+        -:   29:	}
+    #####:   30:	return digit;
+        -:   31:}
+        -:   32:
+function add_symbol called 14943 returned 100% blocks executed 80%
+    14943:   33:void add_symbol(int sn) {
+        -:   34:    struct SYMBOL *p, *tail;
+        -:   35:
+    14943:   36:    if((p = (struct SYMBOL *)malloc(sizeof(struct SYMBOL))) == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:   37:        error("Cannot allocate memory");
+call    0 never executed
+    #####:   38:        return;
+        -:   39:    }
+        -:   40:
+    14943:   41:    p->symbolNo = sn;
+    14943:   42:    p->nextp = NULL;
+        -:   43:
+    14943:   44:    if(symbolRoot == NULL) {
+branch  0 taken 1% (fallthrough)
+branch  1 taken 100%
+       74:   45:        symbolRoot = p;
+        -:   46:    } else {
+    14869:   47:        tail = symbolRoot;
+   117592:   48:        for(; tail->nextp!=NULL; tail=tail->nextp);
+branch  0 taken 87%
+branch  1 taken 13% (fallthrough)
+    14869:   49:        tail->nextp = p;
+        -:   50:    }
+        -:   51:}
+        -:   52:
+function remove_symbol_tail called 14480 returned 100% blocks executed 100%
+    14480:   53:void remove_symbol_tail() {
+    14480:   54:    struct SYMBOL *p = symbolRoot;
+        -:   55:    struct SYMBOL *rmp;
+        -:   56:
+   115699:   57:    for(p; p->nextp!=NULL&&p->nextp->nextp!=NULL; p=p->nextp);
+branch  0 taken 100% (fallthrough)
+branch  1 taken 1%
+branch  2 taken 87%
+branch  3 taken 13% (fallthrough)
+    14480:   58:    rmp = p->nextp;
+    14480:   59:    p->nextp = NULL;
+    14480:   60:    free(rmp);
+    14480:   61:}
+        -:   62:
+function find_symbol called 17948 returned 100% blocks executed 100%
+    17948:   63:int find_symbol(int sn) {
+    17948:   64:    struct SYMBOL *p = symbolRoot;
+        -:   65:
+   138751:   66:    for(; p!=NULL; p=p->nextp) {
+branch  0 taken 91%
+branch  1 taken 9% (fallthrough)
+   125591:   67:        if(p->symbolNo == sn) {
+branch  0 taken 4% (fallthrough)
+branch  1 taken 96%
+        -:   68:            
+     4788:   69:            return 1;
+        -:   70:        }
+        -:   71:    }
+        -:   72:    
+    13160:   73:    return 0;
+        -:   74:}
+        -:   75:
+function register_identifier_name called 728 returned 100% blocks executed 77%
+      728:   76:int register_identifier_name() {
+        -:   77:    struct ID *root, *tail;
+        -:   78:    struct ID *idp, *p;
+        -:   79:    struct TYPE *typep;
+        -:   80:    char *np;
+        -:   81:
+      728:   82:    if((idp = (struct ID *)malloc(sizeof(struct ID))) == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:   83:        return error("Cannot allocate memory");
+call    0 never executed
+        -:   84:    }
+      728:   85:    if((np = (char *)malloc(strlen(string_attr) + 1)) == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:   86:        return error("Cannot allocate memory");
+call    0 never executed
+        -:   87:    }
+        -:   88:
+      728:   89:    memset(np, '\0', sizeof(np));
+      728:   90:    strcpy(np, string_attr);
+      728:   91:    idp->name = np;
+      728:   92:    if(find_symbol(SSUBPROGDECL) && !find_symbol(SPROCNAME)) {
+call    0 returned 100%
+branch  1 taken 30% (fallthrough)
+branch  2 taken 70%
+call    3 returned 100%
+branch  4 taken 73% (fallthrough)
+branch  5 taken 27%
+      162:   93:        p = globalIdRoot;
+     1462:   94:        while(p != NULL && p->nextp != NULL) {
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 89%
+branch  3 taken 11% (fallthrough)
+     1300:   95:            p = p->nextp;
+        -:   96:        }
+      162:   97:        idp->procName = p->name;
+        -:   98:    } else {
+      566:   99:        idp->procName = NULL;
+        -:  100:    }
+        -:  101:    // 追加エラー 1. 名前の二重定義
+        -:  102:    // 同じスコープを持つ同じ名前が複数回宣言されていてはならない
+      728:  103:    if(search_identifier(idp->name, idp->procName) != NULL) {
+call    0 returned 100%
+branch  1 taken 0% (fallthrough)
+branch  2 taken 100%
+    #####:  104:        if(find_symbol(SFORMALPARAMS)) {
+call    0 never executed
+branch  1 never executed (fallthrough)
+branch  2 never executed
+    #####:  105:            return error("Multiple definition of parameter");
+call    0 never executed
+        -:  106:        } else {
+    #####:  107:            return error("Multiple definition of variable");
+call    0 never executed
+        -:  108:        }
+        -:  109:        
+        -:  110:    }
+      728:  111:    if(find_symbol(SPROCNAME) && !find_symbol(SCALLSTMT)) {
+call    0 returned 100%
+branch  1 taken 8% (fallthrough)
+branch  2 taken 92%
+call    3 returned 100%
+branch  4 taken 100% (fallthrough)
+branch  5 taken 0%
+       60:  112:        if((typep = (struct TYPE *)malloc(sizeof(struct TYPE))) == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  113:            return error("Cannot allocate memory");
+call    0 never executed
+        -:  114:        }
+       60:  115:        strcpy(procNameRef, idp->name);
+       60:  116:        typep->typeNo = TPPROC;
+       60:  117:        idp->isDefined = 1;
+        -:  118:    } else {
+      668:  119:        typep = NULL;
+      668:  120:        idp->isDefined = 0;
+        -:  121:    }
+      728:  122:    idp->type = typep;
+      728:  123:    idp->isParam = find_symbol(SFORMALPARAMS) ? 1 : 0;
+call    0 returned 100%
+      728:  124:    idp->defLineNo = get_linenum();
+call    0 returned 100%
+      728:  125:    idp->refLinep = NULL;
+      728:  126:    idp->nextp = NULL;
+        -:  127:
+      728:  128:    root = find_symbol(SSUBPROGDECL) && !find_symbol(SPROCNAME) ? localIdRoot : globalIdRoot;
+call    0 returned 100%
+branch  1 taken 30% (fallthrough)
+branch  2 taken 70%
+call    3 returned 100%
+branch  4 taken 73% (fallthrough)
+branch  5 taken 27%
+      728:  129:    if(root == globalIdRoot && globalIdRoot == NULL) {
+branch  0 taken 78% (fallthrough)
+branch  1 taken 22%
+branch  2 taken 13% (fallthrough)
+branch  3 taken 87%
+       72:  130:        globalIdRoot = idp;
+      656:  131:    } else if(root == localIdRoot && localIdRoot == NULL) {
+branch  0 taken 25% (fallthrough)
+branch  1 taken 75%
+branch  2 taken 35% (fallthrough)
+branch  3 taken 65%
+       57:  132:        localIdRoot = idp;
+        -:  133:    } else {
+     2344:  134:        for(tail = root; tail->nextp!=NULL; tail=tail->nextp);
+branch  0 taken 74%
+branch  1 taken 26% (fallthrough)
+      599:  135:        tail->nextp = idp;
+        -:  136:    }
+        -:  137:
+      728:  138:    return NORMAL;
+        -:  139:}
+        -:  140:
+function register_identifier_type called 599 returned 100% blocks executed 83%
+      599:  141:int register_identifier_type() {
+        -:  142:    // 仮引数部：仮引数部に現れる型は標準型でなくてはならない
+      599:  143:    if(find_symbol(SFORMALPARAMS) && typeNoRef == TPARRAY) {
+call    0 returned 100%
+branch  1 taken 18% (fallthrough)
+branch  2 taken 82%
+branch  3 taken 0% (fallthrough)
+branch  4 taken 100%
+    #####:  144:        return error("Formal parameter types must be standard types");
+call    0 never executed
+        -:  145:    }
+        -:  146:
+        -:  147:    struct TYPE *typep, *tail;
+      599:  148:    struct ID *idp = find_symbol(SSUBPROGDECL) ? localIdRoot : globalIdRoot;
+call    0 returned 100%
+branch  1 taken 27% (fallthrough)
+branch  2 taken 73%
+        -:  149:
+        -:  150:    // 配列の場合...大域変数で詳細を登録
+        -:  151:    // 副プログラムの場合...仮引数登録後に型登録。ローカル変数用の記号表から型情報を取得
+        -:  152:    // 型が空の変数に型を割り当てる実装にすれば変数が複数でも対応できる？とりあえずこの設計で行く
+        -:  153:    do {
+      658:  154:        typep = NULL;
+      658:  155:        if((typep = (struct TYPE *)malloc(sizeof(struct TYPE))) == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  156:            return error("Cannot allocate memory");
+call    0 never executed
+        -:  157:        }
+      658:  158:        typep->typeNo = typeNoRef;
+     2144:  159:        for(; idp->type!=NULL&&idp->nextp!=NULL; idp=idp->nextp);
+branch  0 taken 69% (fallthrough)
+branch  1 taken 31%
+branch  2 taken 100%
+branch  3 taken 0% (fallthrough)
+      658:  160:        idp->type = typep;
+      658:  161:        if(typeNoRef == TPARRAY) {  // 配列の場合
+branch  0 taken 28% (fallthrough)
+branch  1 taken 72%
+      182:  162:            typep->arraySize = arraySizeRef;
+      182:  163:            typep->arrayElemTypeNo = arrayElemTypeNoRef;
+        -:  164:        } else {
+      476:  165:            typep->arraySize = -1;
+      476:  166:            typep->arrayElemTypeNo = -1;
+        -:  167:        }
+      658:  168:    } while(idp->nextp != NULL);
+branch  0 taken 9%
+branch  1 taken 91% (fallthrough)
+      599:  169:    if(find_symbol(SFORMALPARAMS)) {  // 副プログラムの場合
+call    0 returned 100%
+branch  1 taken 18% (fallthrough)
+branch  2 taken 82%
+      994:  170:        for(idp=globalIdRoot; idp->nextp!=NULL; idp=idp->nextp);
+branch  0 taken 89%
+branch  1 taken 11% (fallthrough)
+      110:  171:        tail = idp->type;
+      278:  172:        for(struct ID *p=localIdRoot; p!=NULL; p=p->nextp) {
+branch  0 taken 60%
+branch  1 taken 40% (fallthrough)
+      168:  173:            typep = NULL;
+      168:  174:            if((typep = (struct TYPE *)malloc(sizeof(struct TYPE))) == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  175:                return error("Cannot allocate memory");
+call    0 never executed
+        -:  176:            }
+      168:  177:            if(tail->paramTypep == NULL) {
+branch  0 taken 65% (fallthrough)
+branch  1 taken 35%
+      110:  178:                typep->typeNo = typeNoRef;
+      110:  179:                typep->paramTypep = NULL;
+      110:  180:                tail->paramTypep = typep;
+        -:  181:            }
+      168:  182:            tail = tail->paramTypep;
+        -:  183:        }
+        -:  184:    }
+        -:  185:
+      599:  186:    return NORMAL;
+        -:  187:}
+        -:  188:
+function search_identifier called 3732 returned 100% blocks executed 100%
+     3732:  189:struct ID *search_identifier(char *np, char *procnp) {
+     3732:  190:    struct ID *p = procnp == NULL ? globalIdRoot : localIdRoot;
+branch  0 taken 62% (fallthrough)
+branch  1 taken 38%
+        -:  191:    struct LINE *lp;
+        -:  192:
+     3732:  193:    if(p == NULL) return NULL;
+branch  0 taken 26% (fallthrough)
+branch  1 taken 74%
+     7600:  194:    for(; p!=NULL; p=p->nextp) {
+branch  0 taken 92%
+branch  1 taken 8% (fallthrough)
+     7001:  195:        if(strcmp(np, p->name) == 0) {
+branch  0 taken 31% (fallthrough)
+branch  1 taken 69%
+     2155:  196:            if(p->type != NULL && p->type->typeNo == TPARRAY) arrayElemTypeNoRef = p->type->arrayElemTypeNo;
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 13% (fallthrough)
+branch  3 taken 87%
+        -:  197:            
+     2155:  198:            return p;
+        -:  199:        }
+        -:  200:    }
+        -:  201:    
+      599:  202:    return NULL;
+        -:  203:}
+        -:  204:
+function add_refline called 1069 returned 100% blocks executed 65%
+     1069:  205:int add_refline() {
+        -:  206:    struct ID *idp;
+     1069:  207:    char *procnp = NULL;
+        -:  208:    struct LINE *lp, *tail;
+        -:  209:    
+        -:  210:    // 追加エラー 2. 名前の未定義
+        -:  211:    // ブロックの複合文中で使われる変数名はブロックの変数宣言部で宣言されていなければならない
+        -:  212:    // ブロックの複合文中で使われる手続き名は副プログラム宣言で宣言されていなければならない
+        -:  213:    // すべての名前は，プログラムテキスト中で使用される前に宣言されていなければならない
+     1069:  214:    if(find_symbol(SSUBPROGDECL)) procnp = procNameRef;
+call    0 returned 100%
+branch  1 taken 19% (fallthrough)
+branch  2 taken 81%
+        -:  215:    //if(find_symbol(SCALLSTMT)) strcpy(procNameRef, string_attr);
+        -:  216:    
+     1069:  217:    idp = search_identifier(string_attr, procnp);
+call    0 returned 100%
+     1069:  218:    if(procnp != NULL && idp == NULL) {
+branch  0 taken 19% (fallthrough)
+branch  1 taken 81%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
+        -:  219:        // 局所変数として見つからなかった場合、再帰呼び出しされていないかチェック
+    #####:  220:        if((idp = search_identifier(string_attr, NULL)) != NULL && strcmp(string_attr, procnp) == 0) {
+call    0 never executed
+branch  1 never executed (fallthrough)
+branch  2 never executed
+branch  3 never executed (fallthrough)
+branch  4 never executed
+        -:  221:            // 副プログラム宣言：この手続き名をこの複合文内で使用することはできない．再帰呼び出しはできない
+    #####:  222:            return error("Recursive calls are not allowed");
+call    0 never executed
+        -:  223:        }  
+        -:  224:        // 最後に大域変数にないかチェック
+    #####:  225:        if((idp = search_identifier(string_attr, NULL)) == NULL) {
+call    0 never executed
+branch  1 never executed (fallthrough)
+branch  2 never executed
+    #####:  226:            return error("Specified identifier is not declared");
+call    0 never executed
+        -:  227:        }
+     1069:  228:    } else if(procnp == NULL && idp == NULL) {
+branch  0 taken 81% (fallthrough)
+branch  1 taken 19%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
+    #####:  229:        return error("Specified identifier is not declared");
+call    0 never executed
+        -:  230:    }
+     1069:  231:    strcpy(varNameRef, string_attr);
+     1069:  232:    if(idp != NULL && idp->type->typeNo == TPARRAY) {
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 14% (fallthrough)
+branch  3 taken 86%
+      145:  233:        arraySizeRef = idp->type->arraySize;
+      145:  234:        arrayElemTypeNoRef = idp->type->arrayElemTypeNo;
+        -:  235:    }
+    1069*:  236:    if(find_symbol(SPROCNAME)) paramTypeRef = search_identifier(string_attr, NULL) != NULL ? search_identifier(string_attr, NULL)->type->paramTypep : NULL;
+call    0 returned 100%
+branch  1 taken 2% (fallthrough)
+branch  2 taken 98%
+call    3 returned 100%
+branch  4 taken 100% (fallthrough)
+branch  5 taken 0%
+call    6 returned 100%
+     1069:  237:    if((lp = (struct LINE *)malloc(sizeof(struct LINE))) == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  238:        return error("Cannot allocate memory");
+call    0 never executed
+        -:  239:    }
+     1069:  240:    lp->lineNo = get_linenum();
+call    0 returned 100%
+     1069:  241:    lp->nextp = NULL;
+     1069:  242:    if(idp->refLinep == NULL) {
+branch  0 taken 31% (fallthrough)
+branch  1 taken 69%
+      332:  243:        idp->refLinep = lp;
+        -:  244:    } else {
+      737:  245:        tail = idp->refLinep;
+     6023:  246:        for(; tail->nextp!=NULL; tail=tail->nextp);
+branch  0 taken 88%
+branch  1 taken 12% (fallthrough)
+      737:  247:        tail->nextp = lp;
+        -:  248:    }
+        -:  249:
+     1069:  250:    return idp->type->typeNo;
+        -:  251:}
+        -:  252:
+function iterate_undefined_variable called 800 returned 100% blocks executed 100%
+      800:  253:int iterate_undefined_variable(char **np, char **procnp, struct TYPE **tp) {
+      800:  254:    struct ID *root = find_symbol(SSUBPROGDECL) && !find_symbol(SPROCNAME) ? localIdRoot : globalIdRoot;
+call    0 returned 100%
+branch  1 taken 33% (fallthrough)
+branch  2 taken 67%
+call    3 returned 100%
+branch  4 taken 100% (fallthrough)
+branch  5 taken 0%
+        -:  255:    static struct ID *p;
+        -:  256:    static int isInitialized = 0;
+      800:  257:    int val = 0;
+        -:  258:    
+      800:  259:    if(!isInitialized) {
+branch  0 taken 21% (fallthrough)
+branch  1 taken 79%
+      166:  260:        p = root;
+      166:  261:        isInitialized = 1;
+        -:  262:    }
+     1534:  263:    for(; p!=NULL&&p->isDefined; p=p->nextp);
+branch  0 taken 89% (fallthrough)
+branch  1 taken 11%
+branch  2 taken 54%
+branch  3 taken 46% (fallthrough)
+      800:  264:    if(p != NULL) {
+branch  0 taken 79% (fallthrough)
+branch  1 taken 21%
+      634:  265:        *np = p->name;
+      634:  266:        *tp = p->type;
+      634:  267:        *procnp = p->procName;
+      634:  268:        p->isDefined = 1;
+      634:  269:        val = 1;
+        -:  270:    } else {
+      166:  271:        val = 0;
+      166:  272:        isInitialized = 0;
+        -:  273:    }
+        -:  274:
+      800:  275:    return val;
+        -:  276:}
+        -:  277:
+function iterate_parameter_rev called 159 returned 100% blocks executed 100%
+      159:  278:int iterate_parameter_rev(char **np, char **procnp) {
+      159:  279:    struct ID *root = localIdRoot;
+      159:  280:    struct ID *p = root;
+        -:  281:    static int count = 0;
+        -:  282:    static int isInitialized = 0;
+        -:  283:
+      159:  284:    if(root == NULL) return 0;
+branch  0 taken 1% (fallthrough)
+branch  1 taken 99%
+      158:  285:    if(!isInitialized) {
+branch  0 taken 33% (fallthrough)
+branch  1 taken 67%
+      106:  286:        for(; p->nextp!=NULL&&p->nextp->isParam; p=p->nextp) {
+branch  0 taken 98% (fallthrough)
+branch  1 taken 2%
+branch  2 taken 52%
+branch  3 taken 48% (fallthrough)
+       54:  287:            count++;
+        -:  288:        }
+       52:  289:        isInitialized = 1;
+        -:  290:    } else {
+      109:  291:        for(int i=0; i<count; i++) {
+branch  0 taken 3%
+branch  1 taken 97% (fallthrough)
+        3:  292:            p = p->nextp;
+        -:  293:        }
+        -:  294:    }
+      158:  295:    if(count >= 0) {
+branch  0 taken 67% (fallthrough)
+branch  1 taken 33%
+      106:  296:        *np = p->name;
+      106:  297:        *procnp = p->procName;
+      106:  298:        count--;
+      106:  299:        return 1;
+        -:  300:    } else {
+       52:  301:        count = 0;
+       52:  302:        isInitialized = 0;
+       52:  303:        return 0;
+        -:  304:    }
+        -:  305:}
+        -:  306:
+function switch_root called 37 returned 100% blocks executed 71%
+       37:  307:int switch_root() {
+       37:  308:    if(localIdRoot == NULL) return NORMAL;
+branch  0 taken 3% (fallthrough)
+branch  1 taken 97%
+        -:  309:
+        -:  310:    struct IDROOT *p;
+       36:  311:    if ((p = malloc(sizeof *p)) == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  312:        return error("Cannot allocate memory");
+call    0 never executed
+        -:  313:    }
+        -:  314:
+       36:  315:    p->root = localIdRoot;
+       36:  316:    p->nextp = idRootRoot;
+       36:  317:    idRootRoot = p;
+        -:  318:
+       36:  319:    localIdRoot = NULL;
+       36:  320:    memset(procNameRef, '\0', sizeof(procNameRef));
+       36:  321:    return NORMAL;
+        -:  322:}
+        -:  323:
+function print_reference_table called 0 returned 0% blocks executed 0%
+    #####:  324:void print_reference_table() {
+    #####:  325:    struct IDROOT *rrp = idRootRoot;
+    #####:  326:    struct ID *rp = globalIdRoot, *lrp, *idp;
+    #####:  327:    char *np = NULL;
+    #####:  328:    int maxNameLen = 4;
+    #####:  329:    int maxTypeNameLen = 4;
+    #####:  330:    int lenTemp = 0;
+        -:  331:
+    #####:  332:    if(rp == NULL) {
+branch  0 never executed (fallthrough)
+branch  1 never executed
+    #####:  333:        printf("Name | Type | Define | References\n");
+call    0 never executed
+    #####:  334:        return;  // 出力させるものがない
+        -:  335:    }
+        -:  336:
+    #####:  337:    while(rp->nextp != NULL) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:  338:        rp = rp->nextp;
+        -:  339:    }
+        -:  340:    
+        -:  341:    // これまで記録したローカル変数用の記号表をglobalIdRootの末尾に連結
+    #####:  342:    while(rrp != NULL) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:  343:        rp->nextp = rrp->root;
+    #####:  344:        while(rp->nextp != NULL) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:  345:            rp = rp->nextp;
+    #####:  346:            if((np = (char *)malloc(strlen(rp->name) + strlen(":") + strlen(rp->procName) + 1)) == NULL) {
+branch  0 never executed (fallthrough)
+branch  1 never executed
+    #####:  347:                error("Cannot allocate memory");
+call    0 never executed
+    #####:  348:                return;
+        -:  349:            }
+    #####:  350:            memset(np, 0, sizeof(np));
+    #####:  351:            strcat(np, rp->name);
+    #####:  352:            strcat(np, ":");
+    #####:  353:            strcat(np, rp->procName);
+        -:  354:            
+    #####:  355:            rp->name = np;
+    #####:  356:            np = NULL;
+        -:  357:        }
+    #####:  358:        rrp = rrp->nextp;
+        -:  359:    }
+        -:  360:
+    #####:  361:    globalIdRoot = sort_name_list_asc(globalIdRoot);
+call    0 never executed
+        -:  362:
+    #####:  363:    for(struct ID *p=globalIdRoot; p!=NULL; p=p->nextp) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:  364:        maxNameLen = maxNameLen < strlen(p->name) ? strlen(p->name) : maxNameLen;
+branch  0 never executed (fallthrough)
+branch  1 never executed
+        -:  365:    }
+    #####:  366:    printf("Name");
+call    0 never executed
+    #####:  367:    for(int i=0; i<maxNameLen-strlen("Name"); i++) printf(" ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed (fallthrough)
+    #####:  368:    printf(" | ");
+call    0 never executed
+        -:  369:
+    #####:  370:    for(struct ID *p=globalIdRoot; p!=NULL; p=p->nextp) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:  371:        lenTemp = 0;
+    #####:  372:        if(p->type->typeNo == TPPROC) {
+branch  0 never executed (fallthrough)
+branch  1 never executed
+    #####:  373:            lenTemp = 9;
+    #####:  374:            for(struct TYPE *tp=p->type->paramTypep; tp!=NULL; tp=tp->paramTypep) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:  375:                lenTemp += strlen(type_str[tp->typeNo]);
+    #####:  376:                lenTemp++;
+        -:  377:            }
+    #####:  378:            lenTemp++;
+    #####:  379:        } else if(p->type->typeNo == TPARRAY) {
+branch  0 never executed (fallthrough)
+branch  1 never executed
+    #####:  380:            lenTemp = 11 + get_digit(p->type->arraySize);
+call    0 never executed
+    #####:  381:            lenTemp += strlen(type_str[p->type->arrayElemTypeNo]);
+    #####:  382:        } else if(p->type->typeNo == TPINT || p->type->typeNo == TPBOOL) {
+branch  0 never executed (fallthrough)
+branch  1 never executed
+branch  2 never executed (fallthrough)
+branch  3 never executed
+    #####:  383:            lenTemp = 7;
+        -:  384:        } else {
+    #####:  385:            lenTemp = 4;
+        -:  386:        }
+        -:  387:
+    #####:  388:        maxTypeNameLen = lenTemp > maxTypeNameLen ? lenTemp : maxTypeNameLen;
+        -:  389:    }
+    #####:  390:    printf("Type");
+call    0 never executed
+    #####:  391:    for(int i=0; i<maxTypeNameLen-strlen("Type"); i++) printf(" ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed (fallthrough)
+    #####:  392:    printf(" | ");
+call    0 never executed
+        -:  393:
+    #####:  394:    printf("Define");
+call    0 never executed
+    #####:  395:    printf(" | ");
+call    0 never executed
+        -:  396:
+    #####:  397:    printf("References");
+call    0 never executed
+        -:  398:
+    #####:  399:    printf("\n");
+call    0 never executed
+        -:  400:
+    #####:  401:    for(rp=globalIdRoot; rp!=NULL; rp=rp->nextp) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+        -:  402:        // Name
+    #####:  403:        printf("%s", rp->name);
+call    0 never executed
+    #####:  404:        lenTemp = strlen(rp->name);
+    #####:  405:        for(int i=0; i<maxNameLen-lenTemp; i++) printf(" ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed (fallthrough)
+    #####:  406:        printf(" | ");
+call    0 never executed
+        -:  407:        // Type
+    #####:  408:        switch(rp->type->typeNo) {
+branch  0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  409:            case TPARRAY:
+    #####:  410:                printf("array[%d] of %s", rp->type->arraySize, type_str[rp->type->arrayElemTypeNo]);
+call    0 never executed
+    #####:  411:                lenTemp = 11 + strlen(type_str[rp->type->arrayElemTypeNo]) + get_digit(rp->type->arraySize);
+call    0 never executed
+    #####:  412:                break;
+    #####:  413:            case TPPROC:
+    #####:  414:                printf("procedure");
+call    0 never executed
+    #####:  415:                lenTemp = 9;
+    #####:  416:                if((idp = search_identifier(rp->name, NULL)) != NULL && idp->type->paramTypep != NULL) {
+call    0 never executed
+branch  1 never executed (fallthrough)
+branch  2 never executed
+branch  3 never executed (fallthrough)
+branch  4 never executed
+    #####:  417:                    printf("(");
+call    0 never executed
+    #####:  418:                    for(struct TYPE *p=idp->type->paramTypep; p!=NULL; p=p->paramTypep) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:  419:                        printf("%s", type_str[p->typeNo]);
+call    0 never executed
+    #####:  420:                        if(p->paramTypep != NULL) printf(",");
+branch  0 never executed (fallthrough)
+branch  1 never executed
+call    2 never executed
+    #####:  421:                        lenTemp += strlen(type_str[p->typeNo]);
+    #####:  422:                        lenTemp++; 
+        -:  423:                    }
+    #####:  424:                    lenTemp++;
+    #####:  425:                    printf(")");
+call    0 never executed
+        -:  426:                }
+    #####:  427:                break;
+    #####:  428:            default:
+    #####:  429:                printf("%s", type_str[rp->type->typeNo]);
+call    0 never executed
+    #####:  430:                lenTemp = strlen(type_str[rp->type->typeNo]);
+    #####:  431:                break;
+        -:  432:        }
+    #####:  433:        for(int i=0; i<maxTypeNameLen-lenTemp; i++) printf(" ");
+call    0 never executed
+branch  1 never executed
+branch  2 never executed (fallthrough)
+    #####:  434:        printf(" | ");
+call    0 never executed
+        -:  435:        // Define
+    #####:  436:        printf("%d", rp->defLineNo);
+call    0 never executed
+    #####:  437:        for(int i=0; i<6-(get_digit(rp->defLineNo)); i++) printf(" ");
+call    0 never executed
+call    1 never executed
+branch  2 never executed
+branch  3 never executed (fallthrough)
+    #####:  438:        printf(" | ");
+call    0 never executed
+        -:  439:        // References
+    #####:  440:        for(struct LINE *p=rp->refLinep; p!=NULL; p=p->nextp) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:  441:            printf("%d", p->lineNo);
+call    0 never executed
+    #####:  442:            if(p->nextp != NULL) printf(",");
+branch  0 never executed (fallthrough)
+branch  1 never executed
+call    2 never executed
+        -:  443:        }
+    #####:  444:        printf("\n");
+call    0 never executed
+        -:  445:    }
+        -:  446:}
+        -:  447:
+function sort_name_list_asc called 0 returned 0% blocks executed 0%
+    #####:  448:struct ID *sort_name_list_asc(struct ID *irp) {
+    #####:  449:    struct ID *sorted = NULL;
+        -:  450:
+    #####:  451:    while (irp) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:  452:        struct ID *cur = irp;
+    #####:  453:        irp = irp->nextp;
+        -:  454:
+    #####:  455:        if (!sorted || strcmp(cur->name, sorted->name) < 0) {
+branch  0 never executed (fallthrough)
+branch  1 never executed
+branch  2 never executed (fallthrough)
+branch  3 never executed
+    #####:  456:            cur->nextp = sorted;
+    #####:  457:            sorted = cur;
+        -:  458:        } else {
+    #####:  459:            struct ID *p = sorted;
+    #####:  460:            while (p->nextp && strcmp(p->nextp->name, cur->name) <= 0) {
+branch  0 never executed (fallthrough)
+branch  1 never executed
+branch  2 never executed
+branch  3 never executed (fallthrough)
+    #####:  461:                p = p->nextp;
+        -:  462:            }
+    #####:  463:            cur->nextp = p->nextp;
+    #####:  464:            p->nextp = cur;
+        -:  465:        }
+        -:  466:    }
+        -:  467:
+    #####:  468:    return sorted;
+        -:  469:}

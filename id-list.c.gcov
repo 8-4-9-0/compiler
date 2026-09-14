@@ -1,0 +1,119 @@
+        -:    0:Source:id-list.c
+        -:    1:﻿/**
+        -:    2: * @file id-list.c
+        -:    3: * @author omzn (@omzn.aquatan.net)
+        -:    4: * @brief  識別子リスト操作の関数群
+        -:    5: * @version 0.1
+        -:    6: * @date 2025-02-26
+        -:    7: * 
+        -:    8: */
+        -:    9:#include "scan.h"
+        -:   10:#include "id-list.h"
+        -:   11:
+        -:   12://! 識別子リストの先頭ポインタ
+        -:   13:ID *idroot;
+        -:   14:
+        -:   15:/**
+        -:   16: * @brief 識別子リストの初期化
+        -:   17: */
+function init_idtab called 0 returned 0% blocks executed 0%
+    #####:   18:void init_idtab() { /* Initialise the table */
+    #####:   19:  idroot = NULL;
+    #####:   20:}
+        -:   21:
+        -:   22:/**
+        -:   23: * @brief 識別子リストから指定する識別子を検索する
+        -:   24: * 
+        -:   25: * @param[in] np 指定する識別子
+        -:   26: * @return ID* 発見した識別子へのポインタ
+        -:   27: */
+function search_idtab called 1873 returned 100% blocks executed 100%
+     1873:   28:ID *search_idtab(char *np) { /* search the name pointed by np */
+        -:   29:  ID *p;
+        -:   30:
+    15512:   31:  for (p = idroot; p != NULL; p = p->nextp) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+    14708:   32:    if (!strcmp(np, p->name))
+branch  0 taken 7% (fallthrough)
+branch  1 taken 93%
+     1069:   33:      return (p);
+        -:   34:  }
+      804:   35:  return (NULL);
+        -:   36:}
+        -:   37:
+        -:   38:/**
+        -:   39: * @brief 識別子リストに指定する識別子を登録し，その識別子の出現回数を記録する．
+        -:   40: * 
+        -:   41: * @param[in] np 指定する識別子
+        -:   42: */
+function id_countup called 1873 returned 100% blocks executed 64%
+     1873:   43:void id_countup(char *np) { /* Register and count up the name pointed by np */
+        -:   44:  ID *p;
+        -:   45:  char *cp;
+        -:   46:
+     1873:   47:  if ((p = search_idtab(np)) != NULL)
+call    0 returned 100%
+branch  1 taken 57% (fallthrough)
+branch  2 taken 43%
+     1069:   48:    p->count++;
+        -:   49:  else {
+      804:   50:    if ((p = (ID *)malloc(sizeof(ID))) == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:   51:      error("Cannot malloc for p in id_countup");
+call    0 never executed
+    #####:   52:      return;
+        -:   53:    }
+      804:   54:    if ((cp = (char *)malloc(strlen(np) + 1)) == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:   55:      error("Cannot malloc for cp in id_countup");
+call    0 never executed
+    #####:   56:      return;
+        -:   57:    }
+      804:   58:    strcpy(cp, np);
+      804:   59:    p->name = cp;
+      804:   60:    p->count = 1;
+      804:   61:    p->nextp = idroot;
+      804:   62:    idroot = p;
+        -:   63:  }
+        -:   64:}
+        -:   65:
+        -:   66:/**
+        -:   67: * @brief 識別子リストの内容を出力する
+        -:   68: * 
+        -:   69: */
+function print_idtab called 0 returned 0% blocks executed 0%
+    #####:   70:void print_idtab() { /* Output the registered data */
+        -:   71:  ID *p;
+        -:   72:
+    #####:   73:  for (p = idroot; p != NULL; p = p->nextp) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:   74:    if (p->count != 0)
+branch  0 never executed (fallthrough)
+branch  1 never executed
+    #####:   75:      printf("\t\"Identifier\" \"%s\"\t%d\n", p->name, p->count);
+call    0 never executed
+        -:   76:  }
+    #####:   77:}
+        -:   78:
+        -:   79:/**
+        -:   80: * @brief 識別子リストのメモリを解放する
+        -:   81: * 
+        -:   82: */
+function release_idtab called 0 returned 0% blocks executed 0%
+    #####:   83:void release_idtab() { /* Release tha data structure */
+    #####:   84:  ID *p, *q = NULL;
+        -:   85:
+    #####:   86:  for (p = idroot; p != NULL; p = q) {
+branch  0 never executed
+branch  1 never executed (fallthrough)
+    #####:   87:    free(p->name);
+    #####:   88:    q = p->nextp;
+    #####:   89:    free(p);
+        -:   90:  }
+    #####:   91:  init_idtab();
+call    0 never executed
+    #####:   92:}
